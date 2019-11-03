@@ -1,0 +1,52 @@
+{
+  "name": "mini-sync",
+  "version": "0.0.0",
+  "description": "A tiny, live reloading development server for static sites.",
+  "main": "server.js",
+  "umd:main": "client/dist/client.umd.js",
+  "unpkg": "client/dist/client.umd.js",
+  "files": [
+    "server.js",
+    "client"
+  ],
+  "scripts": {
+    "build": "microbundle build --cwd client",
+    "docs": "doctoc README.md --github && documentation readme server.js --section=API && prettier --write README.md",
+    "git-pre-commit": "precise-commits",
+    "prerelease": "yarn build",
+    "release": "np --no-tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rdmurphy/mini-sync.git"
+  },
+  "keywords": [
+    "development",
+    "static",
+    "livereload"
+  ],
+  "author": "Ryan Murphy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rdmurphy/mini-sync/issues"
+  },
+  "homepage": "https://github.com/rdmurphy/mini-sync#readme",
+  "dependencies": {
+    "local-access": "^1.0.1",
+    "polka": "^0.5.2",
+    "sirv": "^0.4.2"
+  },
+  "devDependencies": {
+    "@newswire/prettier-config": "^2.0.0",
+    "@zeit/git-hooks": "^0.1.4",
+    "chokidar": "^3.2.3",
+    "doctoc": "^1.4.0",
+    "documentation": "^12.1.2",
+    "livereload-js": "^3.1.0",
+    "microbundle": "^0.11.0",
+    "np": "^5.1.2",
+    "precise-commits": "^1.0.2",
+    "prettier": "^1.18.2"
+  },
+  "prettier": "@newswire/prettier-config"
+}
