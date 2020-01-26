@@ -39,14 +39,14 @@
   "devDependencies": {
     "@newswire/prettier-config": "^2.0.0",
     "@zeit/git-hooks": "^0.1.4",
-    "chokidar": "^3.2.3",
+    "chokidar": "^3.3.1",
     "doctoc": "^1.4.0",
-    "documentation": "^12.1.2",
-    "livereload-js": "^3.1.0",
+    "documentation": "^12.1.4",
+    "livereload-js": "^3.2.1",
     "microbundle": "^0.11.0",
-    "np": "^5.1.2",
+    "np": "^5.2.1",
     "precise-commits": "^1.0.2",
-    "prettier": "^1.18.2"
+    "prettier": "^1.19.1"
   },
   "prettier": "@newswire/prettier-config"
 }
