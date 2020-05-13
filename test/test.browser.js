@@ -13,8 +13,6 @@ const { create } = require('../server');
 const browserName = process.env.BROWSER || 'chromium';
 
 describe('browser tests', function () {
-  this.timeout(1e4);
-
   let browser;
   let page;
   let server;
