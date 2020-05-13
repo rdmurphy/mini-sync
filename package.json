@@ -3,18 +3,21 @@
   "version": "0.1.0",
   "description": "A tiny, live reloading development server for static sites.",
   "main": "server.js",
-  "umd:main": "client/dist/client.umd.js",
-  "unpkg": "client/dist/client.umd.js",
+  "umd:main": "client/dist/client.js",
+  "unpkg": "client/dist/client.js",
   "files": [
     "server.js",
     "client"
   ],
   "scripts": {
-    "build": "microbundle build --cwd client",
+    "build": "microbundle build --format iife --no-sourcemap --cwd client",
     "docs": "doctoc README.md --github && documentation readme server.js --section=API && prettier --write README.md",
     "git-pre-commit": "precise-commits",
-    "prerelease": "yarn build",
-    "release": "np --no-tests"
+    "prerelease": "npm run build",
+    "release": "np --no-tests --no-yarn",
+    "test": "npm run test:node && npm run test:browser",
+    "test:browser": "mocha test/test.browser.js",
+    "test:node": "mocha test/test.node.js"
   },
   "repository": {
     "type": "git",
@@ -37,16 +40,19 @@
     "sirv": "^0.4.2"
   },
   "devDependencies": {
-    "@newswire/prettier-config": "^2.0.0",
+    "@newswire/prettier-config": "^3.0.0",
     "@zeit/git-hooks": "^0.1.4",
     "chokidar": "^3.3.1",
     "doctoc": "^1.4.0",
-    "documentation": "^12.1.4",
+    "documentation": "^13.0.0",
     "livereload-js": "^3.2.1",
-    "microbundle": "^0.11.0",
-    "np": "^5.2.1",
+    "microbundle": "^0.12.0",
+    "mocha": "^7.1.2",
+    "node-fetch": "^2.6.0",
+    "np": "^6.2.3",
+    "playwright": "^1.0.1",
     "precise-commits": "^1.0.2",
-    "prettier": "^1.19.1"
+    "prettier": "^2.0.5"
   },
   "prettier": "@newswire/prettier-config"
 }

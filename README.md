@@ -34,9 +34,12 @@
   - [Table of Contents](#table-of-contents)
   - [CreateReturn](#createreturn)
     - [Properties](#properties)
+  - [StartReturn](#startreturn)
+    - [Properties](#properties-1)
   - [create](#create)
     - [Parameters](#parameters)
     - [Examples](#examples)
+  - [start](#start)
 - [Possible future features](#possible-future-features)
 - [License](#license)
 
@@ -62,7 +65,7 @@ You will need to integrate `mini-sync` both into your build pipeline and your Ja
 
 ### Server
 
-Implement `mini-sync` in your build tool by using it as the static server for your assets during development. Once the server is created, it will return a `reload` function that can be called any time you need to communicate with the browser.
+Implement `mini-sync` in your build tool by using it as the static server for your assets during development. Once the server is created, it will return a `reload` function that can be called any time you need to communicate with the browser and a `start` function for activating the static server and watching for `reload` calls.
 
 ```js
 const chokidar = require('chokidar'); // or your preferred file watcher
@@ -71,20 +74,24 @@ const { create } = require('mini-sync');
 const dirToWatch = './app';
 
 async function main() {
-  const { local, network, reload } = await create({
+  const server = create({
     dir: dirToWatch,
     port: 3000,
   });
 
-  console.log(`Local server URL: ${local}`); // http://localhost:3000
-  console.log(`Local network URL: ${network}`); // http://127.x.x.x:3000
-
   const watcher = chokidar.watch('.', { cwd: dirToWatch });
 
-  // every time a file changes, we call the reload command on the server
-  watcher.on('change', path => {
-    reload(path);
+  // every time a file changes, we call the reload command
+  watcher.on('change', (path) => {
+    server.reload(path);
   });
+
+  // start our dev server
+  const { local, network } = await server.start();
+
+  // report out what our URLs are
+  console.log(`Local server URL: ${local}`); // http://localhost:3000
+  console.log(`Local network URL: ${network}`); // http://127.x.x.x:3000
 }
 
 main().catch(console.error);
@@ -92,7 +99,7 @@ main().catch(console.error);
 
 ### Client
 
-`mini-sync` has a super tiny script that needs to be added to your JavaScript bundles or loaded on your HTML page. How best to go about this will depend on your environment, but there are a few methods to consider.
+`mini-sync` has a tiny script that needs to be added to your JavaScript bundles or loaded on your HTML page. How best to go about this will depend on your environment, but there are a few methods to consider.
 
 #### Load directly in your HTML
 
@@ -122,11 +129,27 @@ In this case it will be present in development builds, but in production builds 
 
 - [CreateReturn](#createreturn)
   - [Properties](#properties)
+- [StartReturn](#startreturn)
+  - [Properties](#properties-1)
 - [create](#create)
   - [Parameters](#parameters)
   - [Examples](#examples)
+- [start](#start)
 
 ### CreateReturn
+
+What's returned when the `create` function is called.
+
+Type: [object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)
+
+#### Properties
+
+- `reload` **[Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)** When called this function will reload any connected HTML documents, can accept the path to a file to target for reload
+- `start` **[Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)** When called the server will begin running
+
+### StartReturn
+
+What's returned by the `start` function in a Promise.
 
 Type: [object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)
 
@@ -134,7 +157,7 @@ Type: [object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Globa
 
 - `local` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** The localhost URL for the static site
 - `network` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** The local networked URL for the static site
-- `reload` **[Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)** When called this function will reload any connected HTML documents, can accept the path to a file to target for reload
+- `port` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** The port the server ended up on
 
 ### create
 
@@ -143,27 +166,35 @@ directories locally.
 
 #### Parameters
 
-- `options` **[object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)**
-  - `options.dir` **([string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String) \| [Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array)&lt;[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)>)** The directory or list of directories to serve (optional, default `process.cwd()`)
-  - `options.port` **[number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number)** The port to serve on (optional, default `3000`)
+- `options` **[object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)** (optional, default `{}`)
+  - `options.dir` **([string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String) \| [Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array)&lt;[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)>)?** The directory or list of directories to serve (optional, default `process.cwd()`)
+  - `options.port` **[number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number)?** The port to serve on (optional, default `3000`)
 
 #### Examples
 
 ```javascript
 const { create } = require('mini-sync');
 
-const { local, reload } = await create({ dir: 'app', port: 3000 });
+const server = create({ dir: 'app', port: 3000 });
+
+const { local } = await server.start();
 
 console.log(`Now serving at: ${local}`);
 
 // any time a file needs to change, use "reload"
-reload('app.css');
+server.reload('app.css');
 
 // reloads the whole page
-reload();
+server.reload();
 ```
 
-Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[CreateReturn](#createreturn)>**
+Returns **[CreateReturn](#createreturn)**
+
+### start
+
+Returns a promise once the server started.
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[StartReturn](#startreturn)>**
 
 ## Possible future features
 

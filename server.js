@@ -1,13 +1,21 @@
+// native
+const fs = require('fs');
+const http = require('http');
+const { resolve } = require('path');
+
 // packages
 const access = require('local-access');
 const polka = require('polka');
 const sirv = require('sirv');
 
+// package.json
+const pkg = require('./package.json');
+
 /**
  * Constant for repeated pinging.
  *
  * @private
- * @type {string};
+ * @type {string}
  */
 const ping = ':ping\n';
 
@@ -23,11 +31,36 @@ function writeMessage(messages) {
 }
 
 /**
+ * Constant for reused Cache-Control header.
+ *
+ * @private
+ * @type {string}
+ */
+const doNotCache = 'no-cache, no-store, must-revalidate';
+
+/**
+ * The contents of the compiled client-side code as a Buffer.
+ * @private
+ * @type {Buffer}
+ */
+const clientScript = fs.readFileSync(resolve(__dirname, pkg['umd:main']));
+
+/**
+ * What's returned when the `create` function is called.
  *
  * @typedef {object} CreateReturn
+ * @property {Function} close Stops the server if it is running
+ * @property {Function} reload When called this function will reload any connected HTML documents, can accept the path to a file to target for reload
+ * @property {Function} start When called the server will begin running
+ */
+
+/**
+ * What's returned by the `start` function in a Promise.
+ *
+ * @typedef {object} StartReturn
  * @property {string} local The localhost URL for the static site
  * @property {string} network The local networked URL for the static site
- * @property {Function} reload When called this function will reload any connected HTML documents, can accept the path to a file to target for reload
+ * @property {number} port The port the server ended up on
  */
 
 /**
@@ -35,91 +68,148 @@ function writeMessage(messages) {
  * directories locally.
  *
  * @param {object} options
- * @param {string|string[]} options.dir The directory or list of directories to serve
- * @param {number} options.port The port to serve on
- * @return {Promise<CreateReturn>}
+ * @param {string|string[]} [options.dir] The directory or list of directories to serve
+ * @param {number} [options.port] The port to serve on
+ * @return {CreateReturn}
  * @example
  * const { create } = require('mini-sync');
  *
- * const { local, reload } = await create({ dir: 'app', port: 3000 });
+ * const server = create({ dir: 'app', port: 3000 });
+ *
+ * const { local } = await server.start();
  *
  * console.log(`Now serving at: ${local}`);
  *
  * // any time a file needs to change, use "reload"
- * reload('app.css');
+ * server.reload('app.css');
  *
  * // reloads the whole page
- * reload();
+ * server.reload();
  *
  */
-function create({ dir = process.cwd(), port = 3000 }) {
-  return new Promise((resolve, reject) => {
-    // a set to track all the current client connections
-    const clients = new Set();
+function create({ dir = process.cwd(), port = 3000 } = {}) {
+  // create a raw instance of http.Server so we can hook into it
+  const server = http.createServer();
 
-    // our server
-    const app = polka();
+  // a WeakSet to track all the current client connections
+  const clients = new Set();
 
-    // make sure "serve" is an array
-    const toWatch = Array.isArray(dir) ? dir : [dir];
+  // create our polka server
+  const app = polka({ server });
 
-    // add each directory in "serve"
-    for (let idx = 0; idx < toWatch.length; idx++) {
-      const directory = toWatch[idx];
+  // make sure "serve" is an array
+  const toWatch = Array.isArray(dir) ? dir : [dir];
 
-      app.use(sirv(directory, { dev: true }));
-    }
+  // add each directory in "serve"
+  for (let idx = 0; idx < toWatch.length; idx++) {
+    const directory = toWatch[idx];
 
-    app.get('/__dev_sync__', (req, res) => {
-      //send headers for event-stream connection
-      res.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      });
+    app.use(sirv(directory, { dev: true }));
+  }
 
-      // send initial ping
-      res.write(ping);
-
-      // add client to Set
-      clients.add(res);
-
-      // if the connection closes, stop tracking this client
-      req.on('close', () => {
-        // close the response
-        res.end();
-
-        // remove client from our Set
-        clients.delete(res);
-      });
+  app.get('/__mini_sync__', (req, res) => {
+    //send headers for event-stream connection
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': doNotCache,
+      'Connection': 'keep-alive',
     });
 
-    function reload(file) {
-      for (const client of clients) {
-        client.write(
-          writeMessage(['event: reload', `data: ${JSON.stringify({ file })}`])
-        );
-      }
+    // send initial ping with retry command
+    res.write('retry: 10000\n');
+
+    // add client to Set
+    clients.add(res);
+
+    function disconnect() {
+      // close the response
+      res.end();
+
+      // remove client from our Set
+      clients.delete(res);
     }
 
-    function sendPing() {
-      for (const client of clients) {
-        client.write(ping);
-      }
-    }
-
-    // ping every 10 seconds
-    setInterval(sendPing, 1000 * 60);
-
-    app.listen(port, err => {
-      if (err) reject(err);
-
-      // get paths to networks
-      const { local, network } = access({ port });
-
-      resolve({ local, network, reload });
-    });
+    req.on('error', disconnect);
+    res.on('error', disconnect);
+    res.on('close', disconnect);
+    res.on('finish', disconnect);
   });
+
+  app.get('__mini_sync__/client.js', (_, res) => {
+    // send headers for shipping down a JS file
+    res.writeHead(200, {
+      'Cache-Control': doNotCache,
+      'Content-Length': clientScript.byteLength,
+      'Content-Type': 'text/javascript',
+    });
+
+    // send the client-side script Buffer
+    res.end(clientScript);
+  });
+
+  function reload(file) {
+    for (const client of clients) {
+      client.write(
+        writeMessage(['event: reload', `data: ${JSON.stringify({ file })}`])
+      );
+    }
+  }
+
+  function sendPing() {
+    for (const client of clients) {
+      client.write(ping);
+    }
+  }
+
+  function close() {
+    return new Promise((resolve, reject) => {
+      server.close((err) => {
+        if (err) reject(err);
+
+        resolve();
+      });
+    });
+  }
+
+  /**
+   * Returns a promise once the server started.
+   *
+   * @returns {Promise<StartReturn>}
+   */
+  function start() {
+    return new Promise((resolve, reject) => {
+      server.on('error', (e) => {
+        if (e.code === 'EADDRINUSE') {
+          setTimeout(() => {
+            server.close();
+            server.listen(++port);
+          }, 100);
+        } else {
+          reject(e);
+        }
+      });
+
+      let interval;
+
+      server.on('listening', () => {
+        // ping every 10 seconds
+        interval = setInterval(sendPing, 10e3);
+
+        // get paths to networks
+        const { local, network } = access({ port });
+
+        resolve({ local, network, port });
+      });
+
+      server.on('close', () => {
+        clearInterval(interval);
+      });
+
+      app.listen(port);
+    });
+  }
+
+  return { close, reload, start };
 }
 
 module.exports = { create };

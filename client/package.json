@@ -2,7 +2,5 @@
   "name": "mini-sync-client",
   "private": true,
   "main": "dist/client.js",
-  "module": "dist/client.mjs",
-  "umd:main": "dist/client.umd.js",
   "source": "src/index.js"
 }

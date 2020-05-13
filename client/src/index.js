@@ -2,8 +2,8 @@
 import { Reloader } from 'livereload-js/src/reloader';
 import { Timer } from 'livereload-js/src/timer';
 
-const reloader = new Reloader(window, console, Timer);
-
+const prefix = '[MINI SYNC]';
+const reloader = new Reloader(window, { log: () => {} }, Timer);
 const reloadOptions = {
   liveCSS: true,
   liveImg: true,
@@ -11,25 +11,41 @@ const reloadOptions = {
 
 function connect() {
   const source = new EventSource(
-    `http://${window.location.hostname}:${window.location.port}/__dev_sync__`
+    `http://${window.location.hostname}:${window.location.port}/__mini_sync__`
   );
 
   source.addEventListener('open', () => {
-    console.info('[DEV SYNC] Development server has connected.');
+    console.info('%s Development server has connected.', prefix);
   });
 
-  source.addEventListener('error', err => {
-    console.error(err);
+  source.addEventListener('error', (/** @type {ErrorEvent} */ error) => {
+    const readyState = source.readyState;
 
-    if (source.readyState === EventSource.CLOSED) {
-      console.info('[DEV SYNC] Trying to reconnect in 5 seconds.');
-      setTimeout(connect, 5000);
+    const isConnecting = readyState === EventSource.CONNECTING;
+    const isClosed = readyState === EventSource.CLOSED;
+
+    if (isConnecting || isClosed) {
+      console.info('%s Lost connection. Trying to reconnect...', prefix);
+
+      if (isClosed) {
+        source.close();
+        setTimeout(connect, 1e4);
+      }
+    } else {
+      console.error(error);
     }
   });
 
   source.addEventListener('reload', (/** @type {MessageEvent} */ event) => {
     const data = JSON.parse(event.data);
     const file = data.file || '';
+
+    if (file) {
+      console.info('%s Reloading "%s".', prefix, file);
+    } else {
+      console.info('%s Reloading entire page.', prefix);
+    }
+
     reloader.reload(file, reloadOptions);
   });
 }
