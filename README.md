@@ -65,7 +65,7 @@ You will need to integrate `mini-sync` both into your build pipeline and your Ja
 
 ### Server
 
-Implement `mini-sync` in your build tool by using it as the static server for your assets during development. Once the server is created, it will return a `reload` function that can be called any time you need to communicate with the browser and a `start` function for activating the static server and watching for `reload` calls.
+Implement `mini-sync` in your build tool by using it as the static server for your assets during development. Once the server is created, it will return a `reload` function that can be called any time you need to communicate with the browser, a `start` function for activating the static server and watching for `reload` calls, and a `close` function for stopping the server.
 
 ```js
 const chokidar = require('chokidar'); // or your preferred file watcher
@@ -92,6 +92,9 @@ async function main() {
   // report out what our URLs are
   console.log(`Local server URL: ${local}`); // http://localhost:3000
   console.log(`Local network URL: ${network}`); // http://127.x.x.x:3000
+
+  // ...some time later
+  await server.close();
 }
 
 main().catch(console.error);
@@ -105,13 +108,21 @@ main().catch(console.error);
 
 If you just want to get the code in your page with minimal fuss, you can add it directly to your HTML. Ideally it would run _before_ the rest of your JavaScript does.
 
+As of 0.2.0 the `mini-sync` server hosts its own copy of the client script, and it can be referenced in your HTML.
+
+```html
+<script async src="/__mini_sync__/client.js"></script>
+```
+
+It's also possible to load it via [unpkg.com](https://unpkg.com/).
+
 ```html
 <script async src="https://unpkg.com/mini-sync"></script>
 ```
 
 #### Conditionally add it to your bundle
 
-The most popular bundlers all support conditional includes based on the value of the `NODE_ENV` environment variable. If you can do this in the configuration itself, that's great! But you also could include it directly in your JavaScript itself within an `if` statement.
+Most bundlers support conditional includes based on the value of the `NODE_ENV` environment variable, or a similar mechanism. If you can do this in the configuration itself, that's great! But you also could include it directly in your JavaScript itself within an `if` statement.
 
 ```js
 if (process.env.NODE_ENV === 'development') {
@@ -134,6 +145,9 @@ In this case it will be present in development builds, but in production builds 
 - [create](#create)
   - [Parameters](#parameters)
   - [Examples](#examples)
+- [reload](#reload)
+  - [Parameters](#parameters-1)
+- [close](#close)
 - [start](#start)
 
 ### CreateReturn
@@ -144,6 +158,7 @@ Type: [object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Globa
 
 #### Properties
 
+- `close` **[Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)** Stops the server if it is running
 - `reload` **[Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)** When called this function will reload any connected HTML documents, can accept the path to a file to target for reload
 - `start` **[Function](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function)** When called the server will begin running
 
@@ -157,7 +172,7 @@ Type: [object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Globa
 
 - `local` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** The localhost URL for the static site
 - `network` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** The local networked URL for the static site
-- `port` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** The port the server ended up on
+- `port` **[number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number)** The port the server ended up on
 
 ### create
 
@@ -186,13 +201,30 @@ server.reload('app.css');
 
 // reloads the whole page
 server.reload();
+
+// close the server
+await server.close();
 ```
 
 Returns **[CreateReturn](#createreturn)**
 
+### reload
+
+Tells all connected clients to reload.
+
+#### Parameters
+
+- `file` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)?** The file to reload
+
+### close
+
+Returns a promise once the server closes.
+
+Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;void>**
+
 ### start
 
-Returns a promise once the server started.
+Returns a promise once the server starts.
 
 Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[StartReturn](#startreturn)>**
 

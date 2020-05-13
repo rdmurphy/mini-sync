@@ -86,6 +86,9 @@ const clientScript = fs.readFileSync(resolve(__dirname, pkg['umd:main']));
  * // reloads the whole page
  * server.reload();
  *
+ * // close the server
+ * await server.close();
+ *
  */
 function create({ dir = process.cwd(), port = 3000 } = {}) {
   // create a raw instance of http.Server so we can hook into it
@@ -147,6 +150,11 @@ function create({ dir = process.cwd(), port = 3000 } = {}) {
     res.end(clientScript);
   });
 
+  /**
+   * Tells all connected clients to reload.
+   *
+   * @param {string} [file] The file to reload
+   */
   function reload(file) {
     for (const client of clients) {
       client.write(
@@ -161,6 +169,11 @@ function create({ dir = process.cwd(), port = 3000 } = {}) {
     }
   }
 
+  /**
+   * Returns a promise once the server closes.
+   *
+   * @returns {Promise<void>}
+   */
   function close() {
     return new Promise((resolve, reject) => {
       server.close((err) => {
@@ -172,7 +185,7 @@ function create({ dir = process.cwd(), port = 3000 } = {}) {
   }
 
   /**
-   * Returns a promise once the server started.
+   * Returns a promise once the server starts.
    *
    * @returns {Promise<StartReturn>}
    */

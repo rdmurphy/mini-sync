@@ -14,7 +14,7 @@
     "docs": "doctoc README.md --github && documentation readme server.js --section=API && prettier --write README.md",
     "git-pre-commit": "precise-commits",
     "prerelease": "npm run build",
-    "release": "np --no-tests --no-yarn",
+    "release": "np --no-yarn",
     "test": "npm run test:node && npm run test:browser",
     "test:browser": "mocha test/test.browser.js",
     "test:node": "mocha test/test.node.js"
