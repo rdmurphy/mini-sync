@@ -64,6 +64,9 @@ jobs:
         with:
           node-version: 14.x
 
+      - name: Setup Playwright
+        uses: microsoft/playwright-github-action@v1
+
       - name: Cache node modules
         uses: actions/cache@v1
         env:
