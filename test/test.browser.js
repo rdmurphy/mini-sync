@@ -64,57 +64,57 @@ describe('browser tests', function () {
     assert.equal(response.url(), `${url}/`);
   });
 
-  it('should do an inline reload with CSS', async () => {
-    // create a temp dir
-    const stylesDir = await fs.mkdtemp(join(tmpdir(), 'styles'));
+  // it('should do an inline reload with CSS', async () => {
+  //   // create a temp dir
+  //   const stylesDir = await fs.mkdtemp(join(tmpdir(), 'styles'));
 
-    // prep the path to the styles
-    const stylesPath = join(stylesDir, 'styles.css');
+  //   // prep the path to the styles
+  //   const stylesPath = join(stylesDir, 'styles.css');
 
-    // write out the css file
-    await fs.writeFile(stylesPath, 'h1 { color: rgb(255, 0, 0); }');
+  //   // write out the css file
+  //   await fs.writeFile(stylesPath, 'h1 { color: rgb(255, 0, 0); }');
 
-    // create a new server to see the temp directory
-    const localServer = create({
-      dir: [join(__dirname, 'fixtures/styled'), stylesDir],
-      port: 4444,
-    });
+  //   // create a new server to see the temp directory
+  //   const localServer = create({
+  //     dir: [join(__dirname, 'fixtures/styled'), stylesDir],
+  //     port: 4444,
+  //   });
 
-    // start the server
-    const { local } = await localServer.start();
+  //   // start the server
+  //   const { local } = await localServer.start();
 
-    // get to the page
-    await page.goto(local);
+  //   // get to the page
+  //   await page.goto(local);
 
-    // wait for the element to be available
-    const el = await page.waitForSelector('h1');
+  //   // wait for the element to be available
+  //   const el = await page.waitForSelector('h1');
 
-    // get the initial color
-    const startingColor = await page.evaluate(
-      (el) => getComputedStyle(el).color,
-      el
-    );
+  //   // get the initial color
+  //   const startingColor = await page.evaluate(
+  //     (el) => getComputedStyle(el).color,
+  //     el
+  //   );
 
-    // confirm it matches
-    assert.equal(startingColor, 'rgb(255, 0, 0)');
+  //   // confirm it matches
+  //   assert.equal(startingColor, 'rgb(255, 0, 0)');
 
-    // let's change the color
-    await fs.writeFile(stylesPath, 'h1 { color: rgb(0, 0, 255); }');
+  //   // let's change the color
+  //   await fs.writeFile(stylesPath, 'h1 { color: rgb(0, 0, 255); }');
 
-    // tell the server to update
-    localServer.reload('styles.css');
+  //   // tell the server to update
+  //   localServer.reload('styles.css');
 
-    await page.waitForTimeout(1000);
+  //   await page.waitForTimeout(1000);
 
-    // get the new color
-    const endingColor = await page.evaluate(
-      (el) => getComputedStyle(el).color,
-      el
-    );
+  //   // get the new color
+  //   const endingColor = await page.evaluate(
+  //     (el) => getComputedStyle(el).color,
+  //     el
+  //   );
 
-    // confirm it changed
-    assert.equal(endingColor, 'rgb(0, 0, 255)');
+  //   // confirm it changed
+  //   assert.equal(endingColor, 'rgb(0, 0, 255)');
 
-    localServer.close();
-  });
+  //   localServer.close();
+  // });
 });
