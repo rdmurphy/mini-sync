@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2020-05-13
+
 ### Added
 
 - `mini-sync` will now try to recover if the provided port is taken (defaults to `3000`) and increment until it successfully finds an open one.
