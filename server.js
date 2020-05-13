@@ -202,7 +202,10 @@ function create({ dir = process.cwd(), port = 3000 } = {}) {
       });
 
       server.on('close', () => {
-        clearInterval(interval);
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
       });
 
       app.listen(port);
