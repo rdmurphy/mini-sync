@@ -1,6 +1,6 @@
 {
   "name": "mini-sync",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A tiny, live reloading development server for static sites.",
   "main": "server.js",
   "umd:main": "client/dist/client.js",
