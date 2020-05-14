@@ -41,27 +41,38 @@ describe('browser tests', function () {
   });
 
   it('should load client script and connect using EventSource', async () => {
+    // prep to track our responses
     const responses = new Set();
 
     page.on('response', (res) => {
       responses.add(res.url());
     });
 
+    // load the page
     await page.goto(url);
-    await page.waitForTimeout(1000);
 
+    // wait for our event source to connect
+    await page.waitForResponse(eventSourceUrl);
+
+    // assert we loaded everything we expected
     assert.ok(responses.has(clientUrl));
     assert.ok(responses.has(eventSourceUrl));
   });
 
   it('should do a hard reload', async () => {
+    // load the page
     await page.goto(url);
-    await page.waitForTimeout(1000);
 
+    // wait for our event source to connect
+    await page.waitForResponse(eventSourceUrl);
+
+    // fire the reload
     server.reload();
 
+    // wait for the refresh
     const response = await page.waitForNavigation();
 
+    // check it out
     assert.ok(response.ok());
     assert.equal(response.url(), `${url}/`);
   });
@@ -108,7 +119,11 @@ describe('browser tests', function () {
     // tell the server to update
     localServer.reload('styles.css');
 
-    await localPage.waitForTimeout(1000);
+    // wait for our new styles to be requested and loaded
+    const request = await localPage.waitForRequest(
+      `${local}/styles.css?livereload=*`
+    );
+    await localPage.waitForResponse(request.url());
 
     // get the new color
     const endingColor = await localPage.evaluate(
