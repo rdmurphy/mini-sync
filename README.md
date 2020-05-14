@@ -3,6 +3,7 @@
 </h1>
 <p align="center">
   <a href="https://www.npmjs.org/package/mini-sync"><img src="https://badgen.net/npm/v/mini-sync" alt="npm"></a>
+  <a href="https://github.com/rdmurphy/mini-sync/actions?query=workflow%3A%22Node.js+CI%22"><img src="https://badgen.net/github/checks/rdmurphy/mini-sync?label=build" alt="build status"></a>
   <a href="https://unpkg.com/mini-sync/client/dist/client.umd.js"><img src="https://badgen.net/badgesize/gzip/https://unpkg.com/mini-sync/client/dist/client.umd.js" alt="gzip size"></a>
   <a href="https://unpkg.com/mini-sync/client/dist/client.umd.js"><img src="https://badgen.net/badgesize/brotli/https://unpkg.com/mini-sync/client/dist/client.umd.js" alt="brotli size"></a>
   <a href="https://packagephobia.now.sh/result?p=mini-sync"><img src="https://badgen.net/packagephobia/install/mini-sync" alt="install size"></a>
