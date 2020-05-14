@@ -15,7 +15,7 @@
 
 - 🦗 For less **than a few hundred KBs**, get a fully functional static server that can communicate with browsers during development
 - ♻️ Bundles the maintained version of [`livereload-js`](https://github.com/livereload/livereload-js) in the client code to manage the reloading logic
-- 📦 Client code may be included in browsers via your preferred bundler or CDN
+- 📦 Client code may be included in browsers via your preferred bundler, the static server or CDN
 
 ## Table of contents
 
