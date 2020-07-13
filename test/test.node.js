@@ -6,74 +6,79 @@ const { join } = require('path');
 
 // packages
 const fetch = require('node-fetch').default;
+const { suite } = require('uvu');
 
 // library
 const { create } = require('../server');
 
-describe('basic mini-sync serving tests', () => {
-  let server;
-  let base;
+const basic = suite('basic mini-sync serving tests');
 
-  before(async () => {
-    // create the server
-    server = create({ dir: join(__dirname, 'fixtures/basic') });
+let server;
+let base;
 
-    // start the server
-    const { local } = await server.start();
-    base = local;
-  });
+basic.before(async () => {
+  // create the server
+  server = create({ dir: join(__dirname, 'fixtures/basic') });
 
-  after(async () => {
-    await server.close();
-  });
+  // start the server
+  const { local } = await server.start();
+  base = local;
+});
 
-  it('should serve static files', async () => {
-    const actual = await fetch(new URL('file.txt', base)).then((res) =>
-      res.text()
-    );
+basic.after(async () => {
+  await server.close();
+});
 
-    assert.equal(actual, 'This is a served file.\n');
-  });
+basic('should serve static files', async () => {
+  const actual = await fetch(new URL('file.txt', base)).then((res) =>
+    res.text()
+  );
 
-  it('should be possible to hit the event-stream endpoint', (done) => {
-    const req = http.get(new URL('__mini_sync__', base), (res) => {
-      req.abort();
+  assert.equal(actual, 'This is a served file.\n');
+});
 
-      assert.ok(res.statusCode === 200);
-      done();
-    });
-  });
+basic('should be possible to hit the event-stream endpoint', () => {
+  const req = http.get(new URL('__mini_sync__', base), (res) => {
+    req.abort();
 
-  it('should serve the client library', async () => {
-    const actual = await fetch(
-      new URL('__mini_sync__/client.js', base)
-    ).then((res) => res.text());
-
-    const expected = await fs.readFile(
-      join(process.cwd(), 'client/dist/client.js'),
-      'utf8'
-    );
-
-    assert.equal(actual, expected);
+    assert.ok(res.statusCode === 200);
   });
 });
 
-describe('mini-sync options', () => {
-  it('should be possible to pass in a different port', async () => {
-    const expectedPort = 1234;
-    const expectedLocal = `http://localhost:${expectedPort}`;
+basic('should serve the client library', async () => {
+  const actual = await fetch(
+    new URL('__mini_sync__/client.js', base)
+  ).then((res) => res.text());
 
-    const server = create({ port: expectedPort });
+  const expected = await fs.readFile(
+    join(process.cwd(), 'client/dist/client.js'),
+    'utf8'
+  );
 
-    const { local, port } = await server.start();
+  assert.equal(actual, expected);
+});
 
-    assert.equal(port, expectedPort);
-    assert.equal(local, expectedLocal);
+basic.run();
 
-    await server.close();
-  });
+const options = suite('mini-sync options');
 
-  it('should attempt to find a new port if the provided one is taken', async () => {
+options('should be possible to pass in a different port', async () => {
+  const expectedPort = 1234;
+  const expectedLocal = `http://localhost:${expectedPort}`;
+
+  const server = create({ port: expectedPort });
+
+  const { local, port } = await server.start();
+
+  assert.equal(port, expectedPort);
+  assert.equal(local, expectedLocal);
+
+  await server.close();
+});
+
+options(
+  'should attempt to find a new port if the provided one is taken',
+  async () => {
     const takenPort = 5000;
     const blockingServer = http.createServer().listen(takenPort);
 
@@ -85,5 +90,7 @@ describe('mini-sync options', () => {
 
     blockingServer.close();
     await server.close();
-  });
-});
+  }
+);
+
+options.run();
