@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2020-08-11
+
+### Changed
+
+- No code changes, but via dependency updates (in `sirv`) all files served by `mini-sync` will now receive a `no-cache` Cache Control header.
+
 ## [0.2.0] - 2020-05-13
 
 ### Added
