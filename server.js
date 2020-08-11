@@ -94,7 +94,7 @@ function create({ dir = process.cwd(), port = 3000 } = {}) {
   // create a raw instance of http.Server so we can hook into it
   const server = http.createServer();
 
-  // a WeakSet to track all the current client connections
+  // a Set to track all the current client connections
   const clients = new Set();
 
   // create our polka server
