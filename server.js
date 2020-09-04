@@ -157,8 +157,6 @@ function create({ dir = process.cwd(), port = 3000 } = {}) {
     res.end(clientScript);
   });
 
-  const favicon = fs.readFileSync('./assets/favicon.ico')
-
   app.get('/favicon.ico', (_, res) => {
     // send headers for shipping down favicon
     res.writeHead(200, {
@@ -168,7 +166,7 @@ function create({ dir = process.cwd(), port = 3000 } = {}) {
     });
 
     res.end(favicon);
-  })
+  });
 
   /**
    * Tells all connected clients to reload.
