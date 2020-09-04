@@ -6,7 +6,7 @@ const { resolve } = require('path');
 // packages
 const access = require('local-access');
 const polka = require('polka');
-const sirv = require('sirv').default;
+const sirv = require('sirv');
 
 // package.json
 const pkg = require('./package.json');
@@ -44,6 +44,13 @@ const doNotCache = 'no-cache, no-store, must-revalidate';
  * @type {Buffer}
  */
 const clientScript = fs.readFileSync(resolve(__dirname, pkg['umd:main']));
+
+/**
+ * The favicon.ico as a Buffer.
+ * @private
+ * @type {Buffer}
+ */
+const favicon = fs.readFileSync(resolve(__dirname, 'assets/favicon.ico'));
 
 /**
  * What's returned when the `create` function is called.
@@ -149,6 +156,19 @@ function create({ dir = process.cwd(), port = 3000 } = {}) {
     // send the client-side script Buffer
     res.end(clientScript);
   });
+
+  const favicon = fs.readFileSync('./assets/favicon.ico')
+
+  app.get('/favicon.ico', (_, res) => {
+    // send headers for shipping down favicon
+    res.writeHead(200, {
+      'Cache-Control': doNotCache,
+      'Content-Length': favicon.byteLength,
+      'Content-Type': 'image/vnd.microsoft.icon',
+    });
+
+    res.end(favicon);
+  })
 
   /**
    * Tells all connected clients to reload.

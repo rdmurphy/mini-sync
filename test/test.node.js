@@ -58,6 +58,19 @@ basic('should serve the client library', async () => {
   assert.equal(actual, expected);
 });
 
+basic('should serve the favicon.ico', async () => {
+  const actual = await fetch(
+    new URL('favicon.ico', base)
+  ).then((res) => res.text());
+
+  const expected = await fs.readFile(
+    join(process.cwd(), 'assets/favicon.ico'),
+    'utf8'
+  );
+
+  assert.equal(actual, expected);
+});
+
 basic.run();
 
 const options = suite('mini-sync options');
