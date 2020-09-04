@@ -6,7 +6,7 @@ const { resolve } = require('path');
 // packages
 const access = require('local-access');
 const polka = require('polka');
-const sirv = require('sirv');
+const sirv = require('sirv').default;
 
 // package.json
 const pkg = require('./package.json');
