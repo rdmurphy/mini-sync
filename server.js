@@ -1,11 +1,12 @@
 // native
 const fs = require('fs');
 const http = require('http');
-const { resolve } = require('path');
+const { join, normalize, resolve } = require('path');
 
 // packages
 const access = require('local-access');
 const polka = require('polka');
+const parse = require('@polka/url');
 const sirv = require('sirv');
 
 // package.json
@@ -52,6 +53,83 @@ const clientScript = fs.readFileSync(resolve(__dirname, pkg['umd:main']));
  */
 const favicon = fs.readFileSync(resolve(__dirname, 'assets/favicon.ico'));
 
+function htmlInjectionMiddleware(dirs) {
+  const extensions = ['html', 'htm'];
+
+  function getValue(x) {
+    let y = x.indexOf('/', 1);
+    return y > 1 ? x.substring(0, y) : x;
+  }
+
+  function getPossiblePaths(uri) {
+    let i = 0;
+    let x;
+    let len = uri.length - 1;
+
+    if (uri.charCodeAt(len) === 47) {
+      uri = uri.substring(0, len);
+    }
+
+    const arr = [];
+    let tmp = `${uri}/index`;
+
+    for (; i < extensions.length; i++) {
+      x = extensions[i] ? `.${extensions[i]}` : '';
+      if (uri) arr.push(uri + x);
+      arr.push(tmp + x);
+    }
+
+    return arr;
+  }
+
+  function queryLocalFile(dir, arr) {
+    let i = 0;
+    let abs, stats, name, headers;
+
+    for (; i < arr.length; i++) {
+      abs = normalize(join(dir, (name = arr[i])));
+
+      if (abs.startsWith(dir) && fs.existsSync(abs)) {
+        stats = fs.statSync(abs);
+        if (stats.isDirectory()) continue;
+
+        headers = {
+          'Content-Type': 'text/html',
+          'Last-Modified': stats.mtime.toUTCString(),
+          'Cache-Control': 'no-store',
+        };
+
+        return { abs, stats, headers };
+      }
+    }
+  }
+
+  return function htmlInjection(req, res, next) {
+    const info = parse(req);
+    const paths = getPossiblePaths(getValue(info.pathname));
+
+    for (let idx = 0; idx < dirs.length; idx++) {
+      const dir = dirs[idx];
+
+      const data = queryLocalFile(dir, paths);
+
+      if (data) {
+        const rendered = fs
+          .readFileSync(data.abs, 'utf8')
+          .replace(
+            '</head>',
+            '<script async src="/__mini_sync__/client.js"></script>\n</head>'
+          );
+        data.headers['Content-Length'] = Buffer.byteLength(rendered, 'utf8');
+        res.writeHead(200, data.headers);
+        res.end(rendered);
+      }
+    }
+
+    next();
+  };
+}
+
 /**
  * What's returned when the `create` function is called.
  *
@@ -77,6 +155,7 @@ const favicon = fs.readFileSync(resolve(__dirname, 'assets/favicon.ico'));
  * @param {object} options
  * @param {string|string[]} [options.dir] The directory or list of directories to serve
  * @param {number} [options.port] The port to serve on
+ * @param {boolean} [options.injectClientScript] If true, inject the client script into served HTML pages
  * @return {CreateReturn}
  * @example
  * const { create } = require('mini-sync');
@@ -97,7 +176,11 @@ const favicon = fs.readFileSync(resolve(__dirname, 'assets/favicon.ico'));
  * await server.close();
  *
  */
-function create({ dir = process.cwd(), port = 3000 } = {}) {
+function create({
+  dir = process.cwd(),
+  injectClientScript = true,
+  port = 3000,
+} = {}) {
   // create a raw instance of http.Server so we can hook into it
   const server = http.createServer();
 
@@ -106,16 +189,6 @@ function create({ dir = process.cwd(), port = 3000 } = {}) {
 
   // create our polka server
   const app = polka({ server });
-
-  // make sure "serve" is an array
-  const toWatch = Array.isArray(dir) ? dir : [dir];
-
-  // add each directory in "serve"
-  for (let idx = 0; idx < toWatch.length; idx++) {
-    const directory = toWatch[idx];
-
-    app.use(sirv(directory, { dev: true }));
-  }
 
   app.get('/__mini_sync__', (req, res) => {
     //send headers for event-stream connection
@@ -167,6 +240,20 @@ function create({ dir = process.cwd(), port = 3000 } = {}) {
 
     res.end(favicon);
   });
+
+  // make sure "serve" is an array
+  const toWatch = Array.isArray(dir) ? dir : [dir];
+
+  if (injectClientScript) {
+    app.use(htmlInjectionMiddleware(toWatch));
+  }
+
+  // add each directory in "serve"
+  for (let idx = 0; idx < toWatch.length; idx++) {
+    const directory = toWatch[idx];
+
+    app.use(sirv(directory, { dev: true }));
+  }
 
   /**
    * Tells all connected clients to reload.
