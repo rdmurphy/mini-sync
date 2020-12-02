@@ -15,7 +15,7 @@
 
 - 🦗 For less **than a few hundred KBs**, get a fully functional static server that can communicate with browsers during development
 - ♻️ Bundles the maintained version of [`livereload-js`](https://github.com/livereload/livereload-js) in the client code to manage the reloading logic
-- 📦 Client code may be included in browsers via your preferred bundler, the static server or CDN
+- 📦 Client-side code may be **automatically injected into HTML files** or included in browsers via your preferred bundler, the static server or CDN
 
 ## Table of contents
 
@@ -29,6 +29,7 @@
 - [Usage](#usage)
   - [Server](#server)
   - [Client](#client)
+    - [Automatically inject the script into HTML](#automatically-inject-the-script-into-html)
     - [Load directly in your HTML](#load-directly-in-your-html)
     - [Conditionally add it to your bundle](#conditionally-add-it-to-your-bundle)
 - [API](#api)
@@ -108,9 +109,23 @@ main().catch(console.error);
 
 `mini-sync` has a tiny script that needs to be added to your JavaScript bundles or loaded on your HTML page. How best to go about this will depend on your environment, but there are a few methods to consider.
 
+#### Automatically inject the script into HTML
+
+As of 0.4.0 the easiest method for adding the client-side script is to let `mini-sync` automatically inject the import whenever it serves HTML. As long as the HTML has a closing `</head>` tag, the `mini-sync` server can append the script tag to the `<head>`.
+
+This happens **by default** as of 0.4.0. If you'd like to disable this feature, pass `false` to `injectClientScript` when creating a `mini-sync` instance.
+
+```js
+const server = create({
+  dir: dirToWatch,
+  injectClientScript: false, // defaults to "true"
+  port: 3000,
+});
+```
+
 #### Load directly in your HTML
 
-If you just want to get the code in your page with minimal fuss, you can add it directly to your HTML. Ideally it would run _before_ the rest of your JavaScript does.
+You can also add it to your HTML manually. Ideally it would run _before_ the rest of your JavaScript does. If you plan to use this method, you should set `injectClientScript` to `false` when creating the `mini-sync` instance so the auto-injection does not interfere with your manually added copy.
 
 As of 0.2.0 the `mini-sync` server hosts its own copy of the client script, and it can be referenced in your HTML.
 
@@ -118,7 +133,7 @@ As of 0.2.0 the `mini-sync` server hosts its own copy of the client script, and 
 <script async src="/__mini_sync__/client.js"></script>
 ```
 
-It's also possible to load it via [unpkg.com](https://unpkg.com/).
+It's also possible to load it via [unpkg.com](https://unpkg.com/), but this is not recommended due to the risk of version mismatch.
 
 ```html
 <script async src="https://unpkg.com/mini-sync"></script>
@@ -126,7 +141,7 @@ It's also possible to load it via [unpkg.com](https://unpkg.com/).
 
 #### Conditionally add it to your bundle
 
-Most bundlers support conditional includes based on the value of the `NODE_ENV` environment variable, or a similar mechanism. If you can do this in the configuration itself, that's great! But you also could include it directly in your JavaScript itself within an `if` statement.
+Most bundlers support conditional includes based on the value of the `NODE_ENV` environment variable, or a similar mechanism. If you can do this in the configuration itself, that's great! But you also could include it directly in your JavaScript itself within an `if` statement. If you plan to use this method, you should set `injectClientScript` to `false` when creating the `mini-sync` instance so the auto-injection does not interfere with your bundled copy.
 
 ```js
 if (process.env.NODE_ENV === 'development') {
@@ -187,6 +202,7 @@ directories locally.
 
 - `options` **[object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)** (optional, default `{}`)
   - `options.dir` **([string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String) \| [Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array)&lt;[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)>)?** The directory or list of directories to serve (optional, default `process.cwd()`)
+  - `options.injectClientScript` **[boolean](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean)?** If true, inject the client script into served HTML pages (optional, default `true`)
   - `options.port` **[number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number)?** The port to serve on (optional, default `3000`)
 
 #### Examples
@@ -234,7 +250,6 @@ Returns **[Promise](https://developer.mozilla.org/docs/Web/JavaScript/Reference/
 
 ## Possible future features
 
-- Automatic injection of the client code into served HTML pages
 - The ability to additionally proxy existing servers
 
 ## License

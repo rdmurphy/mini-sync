@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A custom favicon for pages being served by `mini-sync` is now available.
+- It is now possible for `mini-sync` to automatically inject a `<script>` tag adding the served copy at `__mini_sync__/client.js` to HTML pages. This is configured to **happen by default** and can be disabled by setting `injectClientScript` to `false` when creating a `mini-sync` instance.
+
 ## [0.3.0] - 2020-08-11
 
 ### Changed

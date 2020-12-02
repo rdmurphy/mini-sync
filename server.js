@@ -96,7 +96,7 @@ function htmlInjectionMiddleware(dirs) {
         headers = {
           'Content-Type': 'text/html',
           'Last-Modified': stats.mtime.toUTCString(),
-          'Cache-Control': 'no-store',
+          'Cache-Control': doNotCache,
         };
 
         return { abs, stats, headers };
