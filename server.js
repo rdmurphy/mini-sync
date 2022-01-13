@@ -1,15 +1,11 @@
 // native
-const fs = require('fs');
-const http = require('http');
-const { resolve } = require('path');
+import { readFileSync } from 'node:fs';
+import { createServer } from 'node:http';
 
 // packages
-const access = require('local-access');
-const polka = require('polka');
-const sirv = require('sirv');
-
-// package.json
-const pkg = require('./package.json');
+import access from 'local-access';
+import polka from 'polka';
+import sirv from 'sirv';
 
 /**
  * Constant for repeated pinging.
@@ -43,14 +39,16 @@ const doNotCache = 'no-cache, no-store, must-revalidate';
  * @private
  * @type {Buffer}
  */
-const clientScript = fs.readFileSync(resolve(__dirname, pkg['umd:main']));
+const clientScript = readFileSync(
+  new URL('client/dist/client.js', import.meta.url)
+);
 
 /**
  * The favicon.ico as a Buffer.
  * @private
  * @type {Buffer}
  */
-const favicon = fs.readFileSync(resolve(__dirname, 'assets/favicon.ico'));
+const favicon = readFileSync(new URL('assets/favicon.ico', import.meta.url));
 
 /**
  * What's returned when the `create` function is called.
@@ -97,9 +95,9 @@ const favicon = fs.readFileSync(resolve(__dirname, 'assets/favicon.ico'));
  * await server.close();
  *
  */
-function create({ dir = process.cwd(), port = 3000 } = {}) {
+export function create({ dir = process.cwd(), port = 3000 } = {}) {
   // create a raw instance of http.Server so we can hook into it
-  const server = http.createServer();
+  const server = createServer();
 
   // a Set to track all the current client connections
   const clients = new Set();
@@ -245,5 +243,3 @@ function create({ dir = process.cwd(), port = 3000 } = {}) {
 
   return { close, reload, start };
 }
-
-module.exports = { create };

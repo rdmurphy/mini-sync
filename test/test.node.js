@@ -1,15 +1,16 @@
 // native
-const assert = require('assert').strict;
-const fs = require('fs').promises;
-const http = require('http');
-const { join } = require('path');
+import { strict as assert } from 'node:assert';
+import { promises as fs } from 'node:fs';
+import * as http from 'node:http';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // packages
-const fetch = require('node-fetch').default;
-const { suite } = require('uvu');
+import fetch from 'node-fetch';
+import { suite } from 'uvu';
 
 // library
-const { create } = require('../server');
+import { create } from '../server.js';
 
 const basic = suite('basic mini-sync serving tests');
 
@@ -18,7 +19,9 @@ let base;
 
 basic.before(async () => {
   // create the server
-  server = create({ dir: join(__dirname, 'fixtures/basic') });
+  server = create({
+    dir: fileURLToPath(new URL('fixtures/basic', import.meta.url)),
+  });
 
   // start the server
   const { local } = await server.start();
@@ -46,9 +49,9 @@ basic('should be possible to hit the event-stream endpoint', () => {
 });
 
 basic('should serve the client library', async () => {
-  const actual = await fetch(
-    new URL('__mini_sync__/client.js', base)
-  ).then((res) => res.text());
+  const actual = await fetch(new URL('__mini_sync__/client.js', base)).then(
+    (res) => res.text()
+  );
 
   const expected = await fs.readFile(
     join(process.cwd(), 'client/dist/client.js'),

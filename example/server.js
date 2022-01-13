@@ -1,9 +1,11 @@
-const { resolve } = require('path');
-const { create } = require('../');
+import { fileURLToPath } from 'node:url';
+import { create } from '../server.js';
 
 async function main() {
   // create the dev server
-  const server = create({ dir: resolve(__dirname, 'src') });
+  const server = create({
+    dir: fileURLToPath(new URL('src', import.meta.url)),
+  });
 
   // start the dev server
   const { local, network } = await server.start();

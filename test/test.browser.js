@@ -1,15 +1,16 @@
 // native
-const assert = require('assert').strict;
-const fs = require('fs').promises;
-const { tmpdir } = require('os');
-const { join } = require('path');
+import { strict as assert } from 'node:assert';
+import { promises as fs } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // packages
-const { chromium, webkit, firefox } = require('playwright');
-const { suite } = require('uvu');
+import { chromium, webkit, firefox } from 'playwright';
+import { suite } from 'uvu';
 
 // library
-const { create } = require('../server');
+import { create } from '../server.js';
 
 const browserName = process.env.BROWSER || 'chromium';
 
@@ -23,7 +24,9 @@ let eventSourceUrl;
 let clientUrl;
 
 it.before(async function () {
-  server = create({ dir: join(__dirname, 'fixtures/basic') });
+  server = create({
+    dir: fileURLToPath(new URL('fixtures/basic', import.meta.url)),
+  });
   const { local } = await server.start();
 
   url = local;
@@ -92,7 +95,10 @@ it('should do an inline reload with CSS', async function () {
 
   // create a new server to see the temp directory
   const localServer = create({
-    dir: [join(__dirname, 'fixtures/styled'), stylesDir],
+    dir: [
+      fileURLToPath(new URL('fixtures/styled', import.meta.url)),
+      stylesDir,
+    ],
   });
 
   // start the server
